@@ -36,6 +36,8 @@ import LispVal
 import SSParser
 import SSPrettyPrinter
 
+import Debug.Trace
+
 -----------------------------------------------------------
 --                      INTERPRETER                      --
 -----------------------------------------------------------
@@ -49,6 +51,12 @@ eval env (List (Atom "begin":[v])) = eval env v
 eval env (List (Atom "begin": l: ls)) = (eval env l) >>= (\v -> case v of { (error@(Error _)) -> return error; otherwise -> eval env (List (Atom "begin": ls))})
 eval env (List (Atom "begin":[])) = return (List [])
 eval env lam@(List (Atom "lambda":(List formals):body:[])) = return lam
+
+
+eval env (List (Atom "if" : cond : conseq : alt : [])) =
+        eval env cond >>= (\t -> funcaoIf env (t : conseq : alt : []))
+
+
 -- The following line is slightly more complex because we are addressing the
 -- case where define is redefined by the user (whatever is the user's reason
 -- for doing so. The problem is that redefining define does not have
@@ -58,6 +66,7 @@ eval env (List (Atom "define": args)) = maybe (define env args) (\v -> return v)
 eval env (List (Atom func : args)) = mapM (eval env) args >>= apply env func 
 eval env (Error s)  = return (Error s)
 eval env form = return (Error ("Could not eval the special form: " ++ (show form)))
+
 
 stateLookup :: StateT -> String -> StateTransformer LispVal
 stateLookup env var = ST $ 
@@ -238,10 +247,11 @@ eq ((Number a):(Number b):[]) = Bool ((==) a b)
 
 
 
-funcaoIf :: [LispVal] -> LispVal
-funcaoIf ((Bool cond):conseq:alt:[]) 
-  | cond      = conseq
-  | otherwise = alt
+funcaoIf :: StateT -> [LispVal] -> StateTransformer LispVal
+funcaoIf env ((Bool cond)):conseq:alt:[]) 
+  | cond   = eval env conseq
+  | otherwise = eval env alt
+funcaoIf env l = return $ Error "Wrong number of arguments (funcaoIf)"
 
 
 
