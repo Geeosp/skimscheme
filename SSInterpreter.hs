@@ -121,10 +121,15 @@ environment =
           $ insert "boolean?"       (Native predBoolean)
           $ insert "list?"          (Native predList)
           $ insert "+"              (Native numericSum) 
-          $ insert "*"              (Native numericMult) 
+          $ insert "*"              (Native numericMult)
           $ insert "-"              (Native numericSub) 
           $ insert "car"            (Native car)           
-          $ insert "cdr"            (Native cdr)           
+          $ insert "cdr"            (Native cdr)
+          $ insert "<"              (Native lt)
+          $ insert ">"              (Native gt)
+          $ insert "<="             (Native lte)
+          $ insert ">="             (Native gte)
+          $ insert "="              (Native eq)
             empty
 
 type StateT = Map String LispVal
@@ -202,6 +207,8 @@ numericBinOp op args = if onlyNumbers args
                        then Number $ foldl1 op $ Prelude.map unpackNum args 
                        else Error "not a number."
                        
+
+
 onlyNumbers :: [LispVal] -> Bool
 onlyNumbers [] = True
 onlyNumbers (Number n:ns) = onlyNumbers ns
@@ -210,6 +217,35 @@ onlyNumbers ns = False
 unpackNum :: LispVal -> Integer
 unpackNum (Number n) = n
 --- unpackNum a = ... -- Should never happen!!!!
+
+
+---------------------------------------------------------
+
+lt :: [LispVal] -> LispVal
+lt ((Number a):(Number b):[]) = Bool ((<) a b)
+
+gt :: [LispVal] -> LispVal
+gt ((Number a):(Number b):[]) = Bool ((>) a b)
+
+lte :: [LispVal] -> LispVal
+lte ((Number a):(Number b):[]) = Bool ((<=) a b)
+
+gte :: [LispVal] -> LispVal
+gte ((Number a):(Number b):[]) = Bool ((>=) a b)
+
+eq :: [LispVal] -> LispVal
+eq ((Number a):(Number b):[]) = Bool ((==) a b)
+
+
+
+funcaoIf :: [LispVal] -> LispVal
+funcaoIf ((Bool cond):conseq:alt:[]) 
+  | cond      = conseq
+  | otherwise = alt
+
+
+
+
 
 -----------------------------------------------------------
 --                     main FUNCTION                     --
