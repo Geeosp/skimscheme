@@ -51,7 +51,7 @@ eval env (List (Atom "begin":[v])) = eval env v
 eval env (List (Atom "begin": l: ls)) = (eval env l) >>= (\v -> case v of { (error@(Error _)) -> return error; otherwise -> eval env (List (Atom "begin": ls))})
 eval env (List (Atom "begin":[])) = return (List [])
 eval env lam@(List (Atom "lambda":(List formals):body:[])) = return lam
-eval env (List(Atom "let":(List(Atom var,LispVal)):[])) = return (List [])
+
 
 
 
@@ -254,10 +254,10 @@ eq :: [LispVal] -> LispVal
 eq ((Number a):(Number b):[]) = Bool ((==) a b)
 
 divisao :: [LispVal] -> LispVal
-div ((Number a):(Number b):[]) = a `div` b
+divisao ((Number a):(Number b):[]) = Number (a `div` b)
 
 modulo :: [LispVal] -> LispVal
-mod ((Number a):(Number b):[]) = a `mod` b
+modulo ((Number a):(Number b):[]) = Number (a `mod` b)
 
 
 funcaoIf :: StateT -> [LispVal] -> StateTransformer LispVal
