@@ -51,6 +51,9 @@ eval env (List (Atom "begin":[v])) = eval env v
 eval env (List (Atom "begin": l: ls)) = (eval env l) >>= (\v -> case v of { (error@(Error _)) -> return error; otherwise -> eval env (List (Atom "begin": ls))})
 eval env (List (Atom "begin":[])) = return (List [])
 eval env lam@(List (Atom "lambda":(List formals):body:[])) = return lam
+eval env (List(Atom "let":(List(Atom var,LispVal)):[])) = return (List [])
+
+
 
 
 eval env (List (Atom "if" : cond : conseq : alt : [])) =
@@ -142,6 +145,8 @@ environment =
           $ insert "<="             (Native lte)
           $ insert ">="             (Native gte)
           $ insert "="              (Native eq)
+          $ insert "quotient"       (Native divisao)
+          $ insert "modulo"         (Native modulo)
             empty
 
 type StateT = Map String LispVal
@@ -248,6 +253,11 @@ gte ((Number a):(Number b):[]) = Bool ((>=) a b)
 eq :: [LispVal] -> LispVal
 eq ((Number a):(Number b):[]) = Bool ((==) a b)
 
+divisao :: [LispVal] -> LispVal
+div ((Number a):(Number b):[]) = a `div` b
+
+modulo :: [LispVal] -> LispVal
+mod ((Number a):(Number b):[]) = a `mod` b
 
 
 funcaoIf :: StateT -> [LispVal] -> StateTransformer LispVal
