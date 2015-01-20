@@ -52,16 +52,21 @@ eval env (List (Atom "begin": l: ls)) = (eval env l) >>= (\v -> case v of { (err
 eval env (List (Atom "begin":[])) = return (List [])
 eval env lam@(List (Atom "lambda":(List formals):body:[])) = return lam
 
-
-
-
-
+-- if function
 eval env (List (Atom "if" : cond : conseq : alt : [])) =
         eval env cond >>= (\t -> funcaoIf env (t : conseq : alt : []))
 
-
 eval env (List(Atom "if" : cond: conseq:[]))=
         eval env cond >>= (\t-> funcaoIfSemElse env (t:conseq:[]))
+
+
+-- let function
+eval env (List (Atom "let" : List attributions : exp : []))
+    = lambda env parameters exp values
+    where
+        (parameters, values) = splitPairs attributions
+
+
 
 -- The following line is slightly more complex because we are addressing the
 -- case where define is redefined by the user (whatever is the user's reason
@@ -236,7 +241,7 @@ unpackNum (Number n) = n
 --- unpackNum a = ... -- Should never happen!!!!
 
 
----------------------------------------------------------
+--------------------------  ADDITIONS  -------------------------------
 
 lt :: [LispVal] -> LispVal
 lt ((Number a):(Number b):[]) = Bool ((<) a b)
@@ -271,6 +276,11 @@ funcaoIfSemElse :: StateT -> [LispVal] -> StateTransformer LispVal
 funcaoIfSemElse env ((Bool cond):conseq:[]) 
   | cond = eval env conseq
   | otherwise = return (String "unspecified") 
+
+splitPairs :: [LispVal] -> ([LispVal], [LispVal])
+splitPairs [] = ([], [])
+splitPairs ((List (id:val:[])):xs) = (id:ids, val:vals)
+    where (ids, vals) = splitPairs xs
 
 
 
