@@ -57,6 +57,9 @@ eval env (List (Atom "if" : cond : conseq : alt : [])) =
         eval env cond >>= (\t -> funcaoIf env (t : conseq : alt : []))
 
 
+eval env (List(Atom "if" : cond: conseq:[]))=
+        eval env cond >>= (\t-> funcaoIfSemElse env (t:conseq:[]))
+
 -- The following line is slightly more complex because we are addressing the
 -- case where define is redefined by the user (whatever is the user's reason
 -- for doing so. The problem is that redefining define does not have
@@ -248,10 +251,16 @@ eq ((Number a):(Number b):[]) = Bool ((==) a b)
 
 
 funcaoIf :: StateT -> [LispVal] -> StateTransformer LispVal
-funcaoIf env ((Bool cond)):conseq:alt:[]) 
+funcaoIf env (((Bool cond)):conseq:alt:[]) 
   | cond   = eval env conseq
   | otherwise = eval env alt
 funcaoIf env l = return $ Error "Wrong number of arguments (funcaoIf)"
+
+
+funcaoIfSemElse :: StateT -> [LispVal] -> StateTransformer LispVal
+funcaoIfSemElse env ((Bool cond):conseq:[]) 
+  | cond = eval env conseq
+  | otherwise = return (String "unspecified") 
 
 
 
