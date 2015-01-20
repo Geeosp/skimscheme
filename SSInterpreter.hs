@@ -74,6 +74,7 @@ eval env (List (Atom "let" : List attributions : exp : []))
 -- the same semantics as redefining other functions, since define is not
 -- stored as a regular function because of its return type.
 eval env (List (Atom "define": args)) = maybe (define env args) (\v -> return v) (Map.lookup "define" env)
+
 eval env (List (Atom func : args)) = mapM (eval env) args >>= apply env func 
 eval env (Error s)  = return (Error s)
 eval env form = return (Error ("Could not eval the special form: " ++ (show form)))
@@ -111,8 +112,8 @@ defineVar env id val =
 -- maybe :: b -> (a -> b) -> Maybe a -> b
 apply :: StateT -> String -> [LispVal] -> StateTransformer LispVal
 apply env func args =  
-                  case (Map.lookup func env) of
-                      Just (Native f)  -> return (f args)
+                  case (Map.lookup func (trace (show (args)) env)) of
+                      Just (Native f) -> return (f args)
                       otherwise -> 
                         (stateLookup env func >>= \res -> 
                           case res of 
