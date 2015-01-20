@@ -67,6 +67,8 @@ eval env (List (Atom "let" : List attributions : exp : []))
         (parameters, values) = splitPairs attributions
 
 
+-- set! function 
+eval env (List(Atom "set!":var:expr:[])) = aux env var expr
 
 -- The following line is slightly more complex because we are addressing the
 -- case where define is redefined by the user (whatever is the user's reason
@@ -84,7 +86,7 @@ stateLookup :: StateT -> String -> StateTransformer LispVal
 stateLookup env var = ST $ 
   (\s -> 
     (maybe (Error "variable does not exist.") 
-           id (Map.lookup var (union s env) 
+           id (Map.lookup var (union env s) 
     ), s))
 
 
@@ -153,6 +155,8 @@ environment =
           $ insert "="              (Native eq)
           $ insert "quotient"       (Native divisao)
           $ insert "modulo"         (Native modulo)
+          $ insert "cons"           (Native cons)
+          $ insert ";"              (Native comment)
             empty
 
 type StateT = Map String LispVal
@@ -284,7 +288,21 @@ splitPairs ((List (id:val:[])):xs) = (id:ids, val:vals)
     where (ids, vals) = splitPairs xs
 
 
+aux :: StateT -> LispVal -> LispVal -> StateTransformer LispVal
+-- aux env (Atom var) lv | Map.member var env = ST $ (ins -> ((Error ("Unspecified")), ins))
+--                      | otherwise = return (Error("Variable is not defined in this scope"))
+--                        where ins = Map.insert var lv env 
+aux _ _ _ = return (Error ("do it right"))               
 
+attribute:: a-> StateTransformer LispVal
+attribute _ = return (Error ("unspecified"))
+
+cons::  [LispVal] ->LispVal
+cons (a:(List b):[]) = List(a:b) 
+cons (a:b:c)         = Error("Wrong number of arguments")
+
+comment :: [LispVal] -> LispVal
+comment a = List []
 
 
 -----------------------------------------------------------
