@@ -68,7 +68,7 @@ eval env (List (Atom "let" : List attributions : exp : []))
 
 
 -- set! function 
-eval env (List(Atom "set!":var:expr:[])) = funcaoSet env var expr
+eval env (List(Atom "set!": args)) = funcaoSet env args
 
 -- The following line is slightly more complex because we are addressing the
 -- case where define is redefined by the user (whatever is the user's reason
@@ -246,7 +246,15 @@ unpackNum (Number n) = n
 --- unpackNum a = ... -- Should never happen!!!!
 
 
---------------------------  ADDITIONS  -------------------------------
+
+
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+--------------------------  OUR FUNCTIONS  ---------------------------
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+
+
 
 lt :: [LispVal] -> LispVal
 lt ((Number a):(Number b):[]) = Bool ((<) a b)
@@ -288,14 +296,31 @@ splitPairs ((List (id:val:[])):xs) = (id:ids, val:vals)
     where (ids, vals) = splitPairs xs
 
 
-funcaoSet :: StateT -> LispVal -> LispVal -> StateTransformer LispVal
+
+--defineVar env id val = 
+--  ST (\s -> let (ST f)    = eval env val
+--                (result, newState) = f s
+--            in (result, (insert id result newState))
+--  )
+
+funcaoSet :: StateT -> [LispVal] -> StateTransformer LispVal
+funcaoSet env [(Atom id), val] = ST $
+  (\s -> let (ST f) = eval env val
+             (result, newState) = f s
+         in
+            if (Map.member id newState) then 
+              (result, (insert id result newState))
+            else 
+              (Error ("variable does not exist."), newState)
+  )
+
 -- funcaoSet env (Atom var) lv | Map.member var env = ST $ (ins -> ((Error ("Unspecified")), ins))
 --                      | otherwise = return (Error("Variable is not defined in this scope"))
 --                        where ins = Map.insert var lv env 
-funcaoSet _ _ _ = return (Error ("do it right"))               
+--funcaoSet _ _ _ = return (Error ("do it right"))               
 
-attribute :: a -> StateTransformer LispVal
-attribute _ = return (Error ("unspecified"))
+--attribute :: a -> StateTransformer LispVal
+--attribute _ = return (Error ("unspecified"))
 
 cons :: [LispVal] -> LispVal
 cons (a:[List b]) = List (a:b)
