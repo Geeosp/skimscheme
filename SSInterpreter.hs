@@ -114,7 +114,7 @@ defineVar env id val =
 -- maybe :: b -> (a -> b) -> Maybe a -> b
 apply :: StateT -> String -> [LispVal] -> StateTransformer LispVal
 apply env func args =  
-                  case (Map.lookup func env) of
+                  case (Map.lookup func  (trace (show (env)) env)  ) of
                       Just (Native f) -> return (f args)
                       otherwise -> 
                         (stateLookup env func >>= \res -> 
@@ -328,7 +328,7 @@ cons (a:b)        = List (a:b)
 cons l            = Error ("Wrong number of arguments")
 
 comment :: [LispVal] -> LispVal
-comment a = List []
+comment _ = (trace (show ("entrou no comentário")) List[])
 
 
 -----------------------------------------------------------
@@ -343,5 +343,5 @@ getResult (ST f) = f empty -- we start with an empty state.
 
 main :: IO ()
 main = do args <- getArgs
-          putStr $ showResult $ getResult $ eval environment $ readExpr $ concat $ args 
+          putStr $ showResult $ getResult $ eval environment $ readExpr $ concat $ (trace (show(args)) args) 
           
