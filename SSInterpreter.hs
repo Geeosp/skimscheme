@@ -298,9 +298,9 @@ attribute :: a -> StateTransformer LispVal
 attribute _ = return (Error ("unspecified"))
 
 cons :: [LispVal] -> LispVal
-cons (a:[List b]) = List(a:b)
+cons (a:[List b]) = List (a:b)
 cons (a:b)        = List (a:b)
-cons l            = Error("Wrong number of arguments")
+cons l            = Error ("Wrong number of arguments")
 
 comment :: [LispVal] -> LispVal
 comment a = List []
