@@ -68,7 +68,7 @@ eval env (List (Atom "let" : List attributions : exp : []))
 
 
 -- set! function 
-eval env (List(Atom "set!":var:expr:[])) = aux env var expr
+eval env (List(Atom "set!":var:expr:[])) = funcaoSet env var expr
 
 -- The following line is slightly more complex because we are addressing the
 -- case where define is redefined by the user (whatever is the user's reason
@@ -114,7 +114,7 @@ defineVar env id val =
 -- maybe :: b -> (a -> b) -> Maybe a -> b
 apply :: StateT -> String -> [LispVal] -> StateTransformer LispVal
 apply env func args =  
-                  case (Map.lookup func (trace (show (args)) env)) of
+                  case (Map.lookup func env) of
                       Just (Native f) -> return (f args)
                       otherwise -> 
                         (stateLookup env func >>= \res -> 
@@ -288,11 +288,11 @@ splitPairs ((List (id:val:[])):xs) = (id:ids, val:vals)
     where (ids, vals) = splitPairs xs
 
 
-aux :: StateT -> LispVal -> LispVal -> StateTransformer LispVal
--- aux env (Atom var) lv | Map.member var env = ST $ (ins -> ((Error ("Unspecified")), ins))
+funcaoSet :: StateT -> LispVal -> LispVal -> StateTransformer LispVal
+-- funcaoSet env (Atom var) lv | Map.member var env = ST $ (ins -> ((Error ("Unspecified")), ins))
 --                      | otherwise = return (Error("Variable is not defined in this scope"))
 --                        where ins = Map.insert var lv env 
-aux _ _ _ = return (Error ("do it right"))               
+funcaoSet _ _ _ = return (Error ("do it right"))               
 
 attribute:: a-> StateTransformer LispVal
 attribute _ = return (Error ("unspecified"))
