@@ -114,7 +114,7 @@ defineVar env id val =
 -- maybe :: b -> (a -> b) -> Maybe a -> b
 apply :: StateT -> String -> [LispVal] -> StateTransformer LispVal
 apply env func args =  
-                  case (Map.lookup func  (trace (show (env)) env)  ) of
+                  case (Map.lookup func  env) of
                       Just (Native f) -> return (f args)
                       otherwise -> 
                         (stateLookup env func >>= \res -> 
@@ -148,13 +148,15 @@ environment =
           $ insert "-"              (Native numericSub) 
           $ insert "car"            (Native car)           
           $ insert "cdr"            (Native cdr)
+          $ insert "eqv?"           (Native eqv)
+          $ insert "lt?"            (Native lt)
           $ insert "<"              (Native lt)
           $ insert ">"              (Native gt)
           $ insert "<="             (Native lte)
           $ insert ">="             (Native gte)
           $ insert "="              (Native eq)
-          $ insert "quotient"       (Native divisao)
-          $ insert "modulo"         (Native modulo)
+          $ insert "/"              (Native divisao)
+          $ insert "mod"            (Native modulo)
           $ insert "cons"           (Native cons)
           $ insert ";"              (Native comment)
             empty
@@ -254,22 +256,41 @@ unpackNum (Number n) = n
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
 
+-- TO DO:
+-- if         OK
+-- recursion  
+-- let        OK
+-- set!       OK
+-- comment    
+-- cons       OK
+-- it?        OK
+-- /          OK
+-- mod        OK
+-- eqv?       
+-- clausuras  
+
+
 
 
 lt :: [LispVal] -> LispVal
 lt ((Number a):(Number b):[]) = Bool ((<) a b)
+lt ((String a):(String b):[]) = Bool ((<) a b)
 
 gt :: [LispVal] -> LispVal
 gt ((Number a):(Number b):[]) = Bool ((>) a b)
+gt ((String a):(String b):[]) = Bool ((>) a b)
 
 lte :: [LispVal] -> LispVal
 lte ((Number a):(Number b):[]) = Bool ((<=) a b)
+lte ((String a):(String b):[]) = Bool ((<=) a b)
 
 gte :: [LispVal] -> LispVal
 gte ((Number a):(Number b):[]) = Bool ((>=) a b)
+gte ((String a):(String b):[]) = Bool ((>=) a b)
 
 eq :: [LispVal] -> LispVal
 eq ((Number a):(Number b):[]) = Bool ((==) a b)
+eq ((String a):(String b):[]) = Bool ((==) a b)
 
 divisao :: [LispVal] -> LispVal
 divisao ((Number a):(Number b):[]) = Number (a `div` b)
@@ -277,13 +298,11 @@ divisao ((Number a):(Number b):[]) = Number (a `div` b)
 modulo :: [LispVal] -> LispVal
 modulo ((Number a):(Number b):[]) = Number (a `mod` b)
 
-
 funcaoIf :: StateT -> [LispVal] -> StateTransformer LispVal
 funcaoIf env (((Bool cond)):conseq:alt:[]) 
   | cond   = eval env conseq
   | otherwise = eval env alt
 funcaoIf env l = return $ Error "Wrong number of arguments (funcaoIf)"
-
 
 funcaoIfSemElse :: StateT -> [LispVal] -> StateTransformer LispVal
 funcaoIfSemElse env ((Bool cond):conseq:[]) 
@@ -297,12 +316,7 @@ splitPairs ((List (id:val:[])):xs) = (id:ids, val:vals)
 
 
 
---defineVar env id val = 
---  ST (\s -> let (ST f)    = eval env val
---                (result, newState) = f s
---            in (result, (insert id result newState))
---  )
-
+-- igual a funcao define, mas na hora de inserir, checa se ja tem
 funcaoSet :: StateT -> [LispVal] -> StateTransformer LispVal
 funcaoSet env [(Atom id), val] = ST $
   (\s -> let (ST f) = eval env val
@@ -329,6 +343,29 @@ cons l            = Error ("Wrong number of arguments")
 
 comment :: [LispVal] -> LispVal
 comment _ = (trace (show ("entrou no comentário")) List[])
+
+eqv :: [LispVal] -> LispVal
+eqv ((Bool a):(Bool b):[])     = Bool (a == b)
+eqv ((Number a):(Number b):[]) = Bool (a == b)
+eqv ((List []):(List []):[])   = Bool (True) -- duas listas vazias, passa #t
+eqv ((String a):(String b):[]) = Bool (a == b)
+eqv ((Atom a):(Atom b):[])     = Bool (a == b)
+eqv _                          = Bool (False)
+eqv ((List a): (List b):[])    = (trace (show("olar")) eqvList a b) 
+
+eqvList :: [LispVal] -> [LispVal] -> LispVal
+eqvList [] []         = (Bool True)
+eqvList _  []         = (Bool False)
+eqvList [] _          = (Bool False)
+eqvList (a:as) (b:bs) = if unpackBool (eqv [a]:[b]) then
+                          eqvList as bs
+                        else 
+                          (Bool False)
+
+unpackBool :: [LispVal] -> Bool
+unpackBool ((Bool b):[]) = b
+
+
 
 
 -----------------------------------------------------------
