@@ -294,12 +294,13 @@ funcaoSet :: StateT -> LispVal -> LispVal -> StateTransformer LispVal
 --                        where ins = Map.insert var lv env 
 funcaoSet _ _ _ = return (Error ("do it right"))               
 
-attribute:: a-> StateTransformer LispVal
+attribute :: a -> StateTransformer LispVal
 attribute _ = return (Error ("unspecified"))
 
-cons::  [LispVal] ->LispVal
-cons (a:(List b):[]) = List(a:b) 
-cons (a:b:c)         = Error("Wrong number of arguments")
+cons :: [LispVal] -> LispVal
+cons (a:[List b]) = List(a:b)
+cons (a:b)        = List (a:b)
+cons l            = Error("Wrong number of arguments")
 
 comment :: [LispVal] -> LispVal
 comment a = List []
