@@ -57,7 +57,7 @@ eval env (List (Atom "if" : cond : conseq : alt : [])) =
         eval env cond >>= (\t -> funcaoIf env (t : conseq : alt : []))
 
 eval env (List(Atom "if" : cond: conseq:[]))=
-        eval env cond >>= (\t-> funcaoIfSemElse env (t:conseq:[]))
+        eval env cond >>= (\t-> funcaoIfSemElse env (t : conseq : []))
 
 
 -- let function
@@ -269,34 +269,72 @@ unpackNum (Number n) = n
 -- eqv?       
 -- clausuras  
 
-
-
-
 lt :: [LispVal] -> LispVal
 lt ((Number a):(Number b):[]) = Bool ((<) a b)
-lt ((String a):(String b):[]) = Bool ((<) a b)
+lt ((Number a):(Number b):ls) = if (<) a b then
+                                  lt ((Number b):ls)
+                                else
+                                  Bool False
+lt _ = Error ("Wrong number or type of arguments")
+
 
 gt :: [LispVal] -> LispVal
 gt ((Number a):(Number b):[]) = Bool ((>) a b)
-gt ((String a):(String b):[]) = Bool ((>) a b)
+gt ((Number a):(Number b):ls) = if (>) a b then
+                                  gt ((Number b):ls)
+                                else
+                                  Bool False
+gt _ = Error ("Wrong number or type of arguments")
+
 
 lte :: [LispVal] -> LispVal
 lte ((Number a):(Number b):[]) = Bool ((<=) a b)
-lte ((String a):(String b):[]) = Bool ((<=) a b)
+lte ((Number a):(Number b):ls) = if (<=) a b then
+                                  lte ((Number b):ls)
+                                else
+                                  Bool False
+lte _ = Error ("Wrong number or type of arguments")
+
 
 gte :: [LispVal] -> LispVal
 gte ((Number a):(Number b):[]) = Bool ((>=) a b)
-gte ((String a):(String b):[]) = Bool ((>=) a b)
+gte ((Number a):(Number b):ls) = if (>=) a b then
+                                  gte ((Number b):ls)
+                                else
+                                  Bool False
+gte _ = Error ("Wrong number or type of arguments")
+
 
 eq :: [LispVal] -> LispVal
 eq ((Number a):(Number b):[]) = Bool ((==) a b)
-eq ((String a):(String b):[]) = Bool ((==) a b)
+eq ((Number a):(Number b):ls) = if (==) a b then
+                                  eq ((Number b):ls)
+                                else
+                                  Bool False
+eq _ = Error ("Wrong number or type of arguments")
+
+
+evalBool :: (LispVal -> LispVal -> Bool) -> LispVal -> LispVal -> Bool
+evalBool op l1 l2 = op l1 l2
+
 
 divisao :: [LispVal] -> LispVal
 divisao ((Number a):(Number b):[]) = Number (a `div` b)
+divisao l = if (zerofree (tail l)) then
+              numericBinOp (div) l
+            else
+              Error ("Division by zero")
+
+zerofree :: [LispVal] -> Bool
+zerofree [] = True
+zerofree ((Number a):as) = if a == 0 then
+                             False
+                           else
+                             zerofree as
 
 modulo :: [LispVal] -> LispVal
 modulo ((Number a):(Number b):[]) = Number (a `mod` b)
+modulo _ = Error ("Wrong number or type of arguments")
 
 funcaoIf :: StateT -> [LispVal] -> StateTransformer LispVal
 funcaoIf env (((Bool cond)):conseq:alt:[]) 
@@ -350,7 +388,7 @@ eqv ((Number a):(Number b):[]) = Bool (a == b)
 eqv ((List []):(List []):[])   = Bool (True) -- duas listas vazias, passa #t
 eqv ((String a):(String b):[]) = Bool (a == b)
 eqv ((Atom a):(Atom b):[])     = Bool (a == b)
-eqv _                          = Bool (False)
+--eqv l                         = Bool ((trace (show(l)) False))
 eqv ((List a): (List b):[])    = (trace (show("olar")) eqvList a b) 
 
 eqvList :: [LispVal] -> [LispVal] -> LispVal
