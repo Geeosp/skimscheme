@@ -158,7 +158,7 @@ environment =
           $ insert "/"              (Native divisao)
           $ insert "mod"            (Native modulo)
           $ insert "cons"           (Native cons)
-          $ insert ";"              (Native comment)
+          $ insert "comment"        (Native comment)
             empty
 
 type StateT = Map String LispVal
@@ -261,9 +261,9 @@ unpackNum (Number n) = n
 -- recursion  
 -- let        OK
 -- set!       OK
--- comment    
+-- comment    OK
 -- cons       OK
--- it?        OK
+-- lt?        OK
 -- /          OK
 -- mod        OK
 -- eqv?       
@@ -380,7 +380,7 @@ cons (a:b)        = List (a:b)
 cons l            = Error ("Wrong number of arguments")
 
 comment :: [LispVal] -> LispVal
-comment _ = (trace (show ("entrou no comentário")) List[])
+comment _ = List []
 
 eqv :: [LispVal] -> LispVal
 eqv ((Bool a):(Bool b):[])     = Bool (a == b)
