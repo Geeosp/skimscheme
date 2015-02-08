@@ -52,11 +52,21 @@ eval env (List (Atom "begin": l: ls)) = (eval env l) >>= (\v -> case v of { (err
 eval env (List (Atom "begin":[])) = return (List [])
 eval env lam@(List (Atom "lambda":(List formals):body:[])) = return lam
 
+
+eval env (List (Atom "comment" : _)) = return (List [])
+
+-- make-closure function
+-- recebe o nome make-closure + funcao lambda (igual a de cima)
+-- retorna um lispval com o lambda concatenado com o environment atual
+eval env closure@(List(Atom "make-closure" : lam@(List (Atom "lambda" : (List formals) : body : [])) : [])) =
+ --return (List (lam : (Environment (trace (show (env)) env)) : []))
+ return (List (lam : (Environment env) : []))
+
 -- if function
 eval env (List (Atom "if" : cond : conseq : alt : [])) =
         eval env cond >>= (\t -> funcaoIf env (t : conseq : alt : []))
 
-eval env (List(Atom "if" : cond: conseq:[]))=
+eval env (List(Atom "if" : cond : conseq : []))=
         eval env cond >>= (\t-> funcaoIfSemElse env (t : conseq : []))
 
 
@@ -68,7 +78,10 @@ eval env (List (Atom "let" : List attributions : exp : []))
 
 
 -- set! function 
-eval env (List(Atom "set!": args)) = funcaoSet env args
+eval env (List(Atom "set!" : args)) = funcaoSet env args
+
+
+
 
 -- The following line is slightly more complex because we are addressing the
 -- case where define is redefined by the user (whatever is the user's reason
@@ -86,7 +99,8 @@ stateLookup :: StateT -> String -> StateTransformer LispVal
 stateLookup env var = ST $ 
   (\s -> 
     (maybe (Error "variable does not exist.") 
-           id (Map.lookup var (union env s) -- TIVEMOS QUE TROCAR A ORDEM AQUI DOS PARAMETROS
+           id (Map.lookup var (union env s)
+           --id (Map.lookup (trace ("******     trace...    *********"++(show (union env s))) var) (union env s) -- TIVEMOS QUE TROCAR A ORDEM AQUI DOS PARAMETROS
     ), s))
 
 
@@ -119,6 +133,9 @@ apply env func args =
                       otherwise -> 
                         (stateLookup env func >>= \res -> 
                           case res of 
+                            List ((List(Atom "lambda" : List formals : body: [])) : (Environment localEnv) : []) 
+                                  -> lambda (union localEnv env) formals body (trace (show (union localEnv env)) args)
+                                  -- -> lambda (union localEnv env) formals body args
                             List (Atom "lambda" : List formals : body:l) -> lambda env formals body args                              
                             otherwise -> return (Error "not a function.")
                         )
@@ -144,6 +161,10 @@ environment =
           $ insert "boolean?"       (Native predBoolean)
           $ insert "list?"          (Native predList)
           $ insert "+"              (Native numericSum) 
+
+          $ insert "eqv?"           (Native eqv)
+
+          {-
           $ insert "*"              (Native numericMult)
           $ insert "-"              (Native numericSub) 
           $ insert "car"            (Native car)           
@@ -158,10 +179,11 @@ environment =
           $ insert "/"              (Native divisao)
           $ insert "mod"            (Native modulo)
           $ insert "cons"           (Native cons)
-          $ insert "comment"        (Native comment)
+
+          -}
             empty
 
-type StateT = Map String LispVal
+-- type StateT = Map String LispVal
 
 -- StateTransformer is a data type that embodies computations
 -- that transform the state of the interpreter (add new (String, LispVal)
@@ -379,9 +401,6 @@ cons (a:[List b]) = List (a:b)
 cons (a:b)        = List (a:b)
 cons l            = Error ("Wrong number of arguments")
 
-comment :: [LispVal] -> LispVal
-comment _ = List []
-
 eqv :: [LispVal] -> LispVal
 eqv ((Bool a):(Bool b):[])     = Bool (a == b)
 eqv ((Number a):(Number b):[]) = Bool (a == b)
@@ -389,7 +408,7 @@ eqv ((List []):(List []):[])   = Bool (True) -- duas listas vazias, passa #t
 eqv ((String a):(String b):[]) = Bool (a == b)
 eqv ((Atom a):(Atom b):[])     = Bool (a == b)
 --eqv l                         = Bool ((trace (show(l)) False))
-eqv ((List a): (List b):[])    = (trace (show("olar")) eqvList a b) 
+eqv list@((List a): (List b):[])    = (trace (show(list)) eqvList a b) 
 
 eqvList :: [LispVal] -> [LispVal] -> LispVal
 eqvList [] []         = (Bool True)
@@ -418,5 +437,5 @@ getResult (ST f) = f empty -- we start with an empty state.
 
 main :: IO ()
 main = do args <- getArgs
-          putStr $ showResult $ getResult $ eval environment $ readExpr $ concat $ (trace (show(args)) args) 
+          putStr $ showResult $ getResult $ eval environment $ readExpr $ concat $ args
           
