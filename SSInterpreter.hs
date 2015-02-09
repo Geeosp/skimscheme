@@ -48,10 +48,32 @@ eval env val@(Number _) = return val
 eval env val@(Bool _) = return val
 eval env (List [Atom "quote", val]) = return val
 eval env (List (Atom "begin":[v])) = eval env v
-eval env (List (Atom "begin": l: ls)) = (eval env l) >>= (\v -> case v of { (error@(Error _)) -> return error; otherwise -> eval env (List (Atom "begin": ls))})
+--eval env (List (Atom "begin": l: ls)) = (eval env l) >>= (\v -> case v of { (error@(Error _)) -> return error; otherwise -> eval env (List (Atom "begin": ls))})
 eval env (List (Atom "begin":[])) = return (List [])
-eval env lam@(List (Atom "lambda":(List formals):body:[])) = return lam
 
+--eval env (List (Atom "begin": l: ls)) = (eval env l) >>= 
+--      (\v -> 
+--          case v of { 
+--              (error@(Error _)) -> return error; 
+--              otherwise -> eval env (List (Atom "begin": ls))
+--          }
+--      )
+
+eval env (List (Atom "begin": l: ls)) = ST $
+  (\s ->
+    let (ST f) = eval env l
+        (result, newState) = f s
+    in case (trace ("\nresult: "++(show (result))) result) of
+      (error@(Error _)) -> (error, newState)
+      otherwise         -> let envir = (union newState env)
+                               --(ST f2) = eval (trace ("\nenvir"++(show (envir))) envir) (List (Atom "begin" : ls))
+                               (ST f2) = eval newState (List (Atom "begin" : ls))
+                               (result2, newState2) = f2 envir
+                            in (result2, (union newState2 newState))
+  )
+
+
+eval env lam@(List (Atom "lambda":(List formals):body:[])) = return lam
 
 eval env (List (Atom "comment" : _)) = return (List [])
 
@@ -66,20 +88,37 @@ eval env closure@(List(Atom "make-closure" : lam@(List (Atom "lambda" : (List fo
 eval env (List (Atom "if" : cond : conseq : alt : [])) =
         eval env cond >>= (\t -> funcaoIf env (t : conseq : alt : []))
 
-eval env (List(Atom "if" : cond : conseq : []))=
+eval env (List (Atom "if" : cond : conseq : []))=
         eval env cond >>= (\t-> funcaoIfSemElse env (t : conseq : []))
 
 
--- let function
+------ let function
+--eval env (List (Atom "let" : List attributions : exp : []))
+--    = lambda env params exp values
+--    where
+--        (params, values) = splitPairs attributions
+
+
 eval env (List (Atom "let" : List attributions : exp : []))
-    = lambda env parameters exp values
-    where
-        (parameters, values) = splitPairs attributions
+    = let params = splitPairs attributions
+          avaliaParams = (\(id, expr) -> 
+                        let (ST f) = eval env expr
+                            (val, newState) = f env 
+                         in (id, val))
+          envVazio = Map.empty 
+          args = Prelude.map avaliaParams params
+          inserirNoEnv = (\(Atom f, a) m -> Map.insert f a m)
+          letEnv = Prelude.foldr inserirNoEnv envVazio args
+
+      in ST $ (\s -> let (ST f) = eval (union letEnv env) exp
+                         (result, newState) = f s
+                         finalState = union (difference newState letEnv) env
+                     in (result, finalState)
+    )
 
 
 -- set! function 
 eval env (List(Atom "set!" : args)) = funcaoSet env args
-
 
 
 
@@ -115,10 +154,14 @@ define env [(Atom id), val] = defineVar env id val
 define env [(List [Atom id]), val] = defineVar env id val
 -- define env [(List l), val]                                       
 define env args = return (Error "wrong number of arguments")
+
+-- adicionar um union entre os states pra ele poder pegar as variaveis direito,
+-- sem perder as antigas
 defineVar env id val = 
   ST (\s -> let (ST f)    = eval env val
                 (result, newState) = f s
-            in (result, (insert id result newState))
+            --in (result, (insert id result newState))
+            in (result, (insert id result (union newState env))) -- ele tem que incluir o novo estado no retorno, mas sem ignorar o antigo
      )
 
 
@@ -128,14 +171,22 @@ defineVar env id val =
 -- maybe :: b -> (a -> b) -> Maybe a -> b
 apply :: StateT -> String -> [LispVal] -> StateTransformer LispVal
 apply env func args =  
-                  case (Map.lookup func  env) of
+                  case (Map.lookup func env) of
+                  --case (Map.lookup (trace (show (func)) func) (trace (show (env)) env)) of
                       Just (Native f) -> return (f args)
                       otherwise -> 
                         (stateLookup env func >>= \res -> 
                           case res of 
-                            List ((List(Atom "lambda" : List formals : body: [])) : (Environment localEnv) : []) 
-                                  -> lambda (union localEnv env) formals body (trace (show (union localEnv env)) args)
-                                  -- -> lambda (union localEnv env) formals body args
+                            List (lam@(List (Atom "lambda" : List formals : body : [])) : (Environment localEnv) : []) -> ST $
+                                (\s ->
+                                    let closureEnv = union localEnv env
+                                        (ST f) = lambda closureEnv formals body args
+                                        (result, newState) = f $ union closureEnv s
+                                        (ST f2) = eval newState (List (Atom "define" : Atom func : (List (Atom "make-closure" : lam : [])) : []))
+                                        (result2, newClosureState) = f2 $ union newState $ union env s
+                                        finalState = union (difference newClosureState (difference localEnv env)) env
+                                    in (result, finalState)
+                                )
                             List (Atom "lambda" : List formals : body:l) -> lambda env formals body args                              
                             otherwise -> return (Error "not a function.")
                         )
@@ -163,10 +214,12 @@ environment =
           $ insert "+"              (Native numericSum) 
 
           $ insert "eqv?"           (Native eqv)
+          $ insert "-"              (Native numericSub)  
+          $ insert "/"              (Native divisao)       
 
-          {-
           $ insert "*"              (Native numericMult)
-          $ insert "-"              (Native numericSub) 
+
+          {- 
           $ insert "car"            (Native car)           
           $ insert "cdr"            (Native cdr)
           $ insert "eqv?"           (Native eqv)
@@ -179,8 +232,8 @@ environment =
           $ insert "/"              (Native divisao)
           $ insert "mod"            (Native modulo)
           $ insert "cons"           (Native cons)
-
-          -}
+          -}      
+  
             empty
 
 -- type StateT = Map String LispVal
@@ -369,10 +422,10 @@ funcaoIfSemElse env ((Bool cond):conseq:[])
   | cond = eval env conseq
   | otherwise = return (String "unspecified") 
 
-splitPairs :: [LispVal] -> ([LispVal], [LispVal])
-splitPairs [] = ([], [])
-splitPairs ((List (id:val:[])):xs) = (id:ids, val:vals)
-    where (ids, vals) = splitPairs xs
+splitPairs :: [LispVal] -> [(LispVal, LispVal)]
+splitPairs [] = []
+splitPairs ((List (id:val:[])):xs) = (id, val) : rest
+    where rest = splitPairs xs
 
 
 
