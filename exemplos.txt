@@ -29,14 +29,14 @@
 -- ifSemElse  OK
 -- recursion  
 -- let        OK        
--- set!       
+-- set!       OK       
 -- comment    OK
 -- cons       OK 
 -- lt?        OK
 -- /          OK
 -- mod        OK
 -- eqv?       OK  
--- clausuras  
+-- clausuras  1/2
 -- lambda     OK
 -- car        OK
 -- cdr        OK
@@ -50,7 +50,7 @@
 
 "(begin (define lista '(5 10 15 20)) (define lista2 '(25 30 35)) (define lista3 (cons (car lista) (cdr lista2))) lista3)"
 
--- dá erro no if sem else pois não existe o else (unspecified)
+-- dá erro esperado no if sem else pois não existe o else (unspecified)
 "(begin (define f (if (eqv? (mod 8 2) 1) 6)) f)"
 
 
@@ -58,6 +58,19 @@
 
 
 "(begin (define x 5) (let ((x 15) (a 10) (b 20)) (begin (define y (+ a b x)) (define z (/ y x)))) (* x z))"
+
+
+"(begin (let ((a 2) (b 10)) (define g (make-closure (lambda (y) (begin (set! a (- y (+ a b))) a) )))) (define res1 (g 14)) (define res2 (g 8)) (- res1 res2))"
+
+
+--dando not a number
+"(begin (let ((m 3) (n 9)) (define f (lambda (z) (begin (+ (* z n) m))))) (define h (f 2)))"
+
+
+-- sem o closure (professor!)
+"(begin (let ((i 0)) (define f (lambda (y) (begin (set! i (+ i y)) i)))) (define val1 (f 1)) (define val2 (f 1)) (+ val1 val2))"
+
+
 
 
 

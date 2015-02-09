@@ -212,27 +212,25 @@ environment =
           $ insert "boolean?"       (Native predBoolean)
           $ insert "list?"          (Native predList)
           $ insert "+"              (Native numericSum) 
-
           $ insert "eqv?"           (Native eqv)
           $ insert "-"              (Native numericSub)  
           $ insert "/"              (Native divisao)       
-
           $ insert "*"              (Native numericMult)
-
-          {- 
-          $ insert "car"            (Native car)           
-          $ insert "cdr"            (Native cdr)
-          $ insert "eqv?"           (Native eqv)
           $ insert "lt?"            (Native lt)
+          $ insert "mod"            (Native modulo)
+          $ insert "/"              (Native divisao)
+         {-
           $ insert "<"              (Native lt)
           $ insert ">"              (Native gt)
           $ insert "<="             (Native lte)
           $ insert ">="             (Native gte)
           $ insert "="              (Native eq)
-          $ insert "/"              (Native divisao)
-          $ insert "mod"            (Native modulo)
+          
           $ insert "cons"           (Native cons)
-          -}      
+          $ insert "car"            (Native car)           
+          $ insert "cdr"            (Native cdr) 
+          
+          -}   
   
             empty
 
@@ -394,6 +392,7 @@ evalBool op l1 l2 = op l1 l2
 
 
 divisao :: [LispVal] -> LispVal
+
 divisao ((Number a):(Number b):[]) = Number (a `div` b)
 divisao l = if (zerofree (tail l)) then
               numericBinOp (div) l
