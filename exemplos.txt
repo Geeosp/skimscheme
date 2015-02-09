@@ -28,12 +28,12 @@
 -- if         OK
 -- ifSemElse  OK
 -- recursion  
--- let        
+-- let        OK        
 -- set!       
 -- comment    OK
 -- cons       OK 
 -- lt?        OK
--- /          
+-- /          OK
 -- mod        OK
 -- eqv?       OK  
 -- clausuras  
@@ -56,19 +56,8 @@
 
 "(begin (define x 10) (let ((x 1) (z 10)) (begin (define y (+ x 50)))) (+ x y))"
 
--- let ta com bronca quando passa mais de um comando no corpo (begin)
-"(begin (define x 5) (let ((a 10) (b 20) (x 15)) (begin (define y (+ a b x)) (define z (/ y x)))) (* x z))"
 
-"(begin 
-    (define x 5) 
-    (let ((a 10) (b 20) (x 15)) 
-      (begin 
-        (define y (+ a b x)) 
-        (define z (/ y x))
-      )
-    ) 
-    (* x z))"
-
+"(begin (define x 5) (let ((x 15) (a 10) (b 20)) (begin (define y (+ a b x)) (define z (/ y x)))) (* x z))"
 
 
 

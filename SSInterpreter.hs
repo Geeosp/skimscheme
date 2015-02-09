@@ -49,7 +49,7 @@ eval env val@(Bool _) = return val
 eval env (List [Atom "quote", val]) = return val
 eval env (List (Atom "begin":[v])) = eval env v
 --eval env (List (Atom "begin": l: ls)) = (eval env l) >>= (\v -> case v of { (error@(Error _)) -> return error; otherwise -> eval env (List (Atom "begin": ls))})
-eval env (List (Atom "begin":[])) = return (List [])
+eval env (List (Atom "begin":[])) = ST $ (\s -> (List [], env))
 
 --eval env (List (Atom "begin": l: ls)) = (eval env l) >>= 
 --      (\v -> 
@@ -66,8 +66,8 @@ eval env (List (Atom "begin": l: ls)) = ST $
     in case (trace ("\nresult: "++(show (result))) result) of
       (error@(Error _)) -> (error, newState)
       otherwise         -> let envir = (union newState env)
-                               --(ST f2) = eval (trace ("\nenvir"++(show (envir))) envir) (List (Atom "begin" : ls))
-                               (ST f2) = eval newState (List (Atom "begin" : ls))
+                               (ST f2) = eval (trace ("\nenvir"++(show (envir))) envir) (List (Atom "begin" : ls))
+                              -- (ST f2) = eval newState (List (Atom "begin" : ls))
                                (result2, newState2) = f2 envir
                             in (result2, (union newState2 newState))
   )
@@ -140,7 +140,7 @@ stateLookup env var = ST $
     (maybe (Error "variable does not exist.") 
            id (Map.lookup var (union env s)
            --id (Map.lookup (trace ("******     trace...    *********"++(show (union env s))) var) (union env s) -- TIVEMOS QUE TROCAR A ORDEM AQUI DOS PARAMETROS
-    ), s))
+    ), (union env s)))
 
 
 -- Because of monad complications, define is a separate function that is not
