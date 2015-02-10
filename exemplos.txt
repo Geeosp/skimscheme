@@ -1,184 +1,69 @@
+-- exemplos da especificacao
+
 "(begin (define f (lambda (x) (+ x 10))) (define result (f (car '(50 34 567 433 22 23 2345 \"ok\" (6 87 6))))) result)"
 
+"(begin (let ((i 1)) (define f (make-closure (lambda (y) (begin (set! i (+ i y)) i))))) (define val1 (f 1)) (define val2 (f 1)) (+ val1 val2))"
 
-(begin (let ((i 1)) (define f (make-closure (lambda (y) (begin (set! i (+ i y)) i))))) (define val1 (f 1)) (define val2 (f 1)) (+ val1 val2))
-
-(begin (let ((i 0)) (define f (lambda (y) (begin (set! i (+ i y)) i)))) (define val1 (f 1)) (define val2 (f 1)) (+ val1 val2))
-
-
-(begin   
-  (let ((i 1))                       
-    (define f 								
-      (make-closure 
-        (lambda (y) 
-          (begin (set! i (+ i y)) i) 	 
-        )
-      )
-    )
-  )
-  (define val1 (f 1))
-  (define val2 (f 1))
-  (- val1 val2) 
-)
-
-
+"(begin (let ((i 0)) (define f (lambda (y) (begin (set! i (+ i y)) i)))) (define val1 (f 1)) (define val2 (f 1)) (+ val1 val2))"
 
 
 
 -- if         OK
 -- ifSemElse  OK
--- recursion  
--- let        OK        
--- set!       OK       
+-- recursion  OK
+-- let        OK      
+-- set!       OK     
 -- comment    OK
--- cons       OK 
+-- cons       OK
 -- lt?        OK
 -- /          OK
 -- mod        OK
--- eqv?       OK  
--- clausuras  1/2
+-- eqv?       OK
+-- clausuras  2/2
 -- lambda     OK
 -- car        OK
 -- cdr        OK
 
 
-
--- esse caso pega a String
+-- 1st caso: eqv? e comment
 "(begin (comment asudh asdhuas asdhiuas asdhiuasd) (eqv? \"a\" \"a\"))"
 
+-- 2nd caso: lambda, if com else, lt? 
 "(begin (define f (lambda (a) (+ a 1))) (define x (if (lt? (f 5) 10) 4 5)) x)"
 
+-- 3rd caso: cons, car, cdr
 "(begin (define lista '(5 10 15 20)) (define lista2 '(25 30 35)) (define lista3 (cons (car lista) (cdr lista2))) lista3)"
 
--- dá erro esperado no if sem else pois não existe o else (unspecified)
+-- 4th caso: mod, if sem else (com erro esperado: unspecified)
 "(begin (define f (if (eqv? (mod 8 2) 1) 6)) f)"
 
-
+-- 5th caso: div, let
 "(begin (define x 10) (let ((x 1) (z 10)) (begin (define y (+ x 50)))) (+ x y))"
-
 
 "(begin (define x 5) (let ((x 15) (a 10) (b 20)) (begin (define y (+ a b x)) (define z (/ y x)))) (* x z))"
 
-
+-- 6th caso: let, set!, closure
 "(begin (let ((a 2) (b 10)) (define g (make-closure (lambda (y) (begin (set! a (- y (+ a b))) a) )))) (define res1 (g 14)) (define res2 (g 8)) (- res1 res2))"
 
+-- 7th caso: eqv?, recursão
+"(begin (define mult (lambda (a b) (if (eqv? b 0) 0 (+ a (mult a (- b 1)))))) (define fat (lambda (a) (if (eqv? a 0) 1 (* a (fat (- a 1)))))) (fat 10))"
 
---dando not a number
-"(begin (let ((m 3) (n 9)) (define f (lambda (z) (begin (+ (* z n) m))))) (define h (f 2)))"
-
--- exemplo acima com closure
+-- 8th caso: div, let, closures
 "(begin (let ((m 3) (n 9)) (define f (make-closure (lambda (z) (begin (/ (* z n) m)))))) (define h (f 2)))"
+
+-- 9th caso: quicksort
+"(begin (define partition (lambda (compare l1) (if (null? l1) '() (if (compare (car l1)) (cons (car l1) (partition compare (cdr l1))) (partition compare (cdr l1)))))) (define quicksort (lambda (l1) (if (null? l1) '() (let ((pivot (car l1))) (append (append (quicksort (partition (lambda (x) (< x pivot)) l1)) (partition (lambda (x) (= x pivot)) l1)) (quicksort (partition (lambda (x) (> x pivot)) l1))))))) (quicksort '(7 12 2 4 25 14 36 0 18 1 12)))"
+ 
+-- 10th caso: 
+
+
+
+
+-- sem o closure (dando not a number)
+"(begin (let ((m 3) (n 9)) (define f (lambda (z) (begin (+ (* z n) m))))) (define h (f 2)))"
 
 -- sem o closure (professor!)
 "(begin (let ((i 0)) (define f (lambda (y) (begin (set! i (+ i y)) i)))) (define val1 (f 1)) (define val2 (f 1)) (+ val1 val2))"
-
-
-
-
-
--- multiplicacao
-"(begin (define mult (lambda (a b) (if (eqv? b 0) 0 (+ a (mult a (- b 1)))))) (mult 4 10))"
-
--- fatorial (10! = 3628800)
-"(begin (define fat (lambda (a) (if (eqv? a 0) 1 (* a (fat (- a 1)))))) (fat 10))"
-
--- fatorial usando a multiplicao com recursão
-"(begin (define mult (lambda (a b) (if (eqv? b 0) 0 (+ a (mult a (- b 1)))))) (define fat (lambda (a) (if (eqv? a 0) 1 (* a (fat (- a 1)))))) (fat 10))"
-
-
-
-(define pivot (lambda (l) (cond ((null? l) 'done) ((null? (cdr l)) 'done) ((<= (car l) (cadr l)) (pivot (cdr l))) (#t (car l)))))
-
-(define pivot (lambda (l)
-  (cond ((null? l) 'done)
-        ((null? (cdr l)) 'done)
-        ((<= (car l) (cadr l)) (pivot (cdr l)))
-        (#t (car l)))))
-
-(define partition (lambda (piv l p1 p2)
-  (if (null? l) (list p1 p2)
-     (if (< (car l) piv) (partition piv (cdr l) (cons (car l) p1) p2)
-   (partition piv (cdr l) p1 (cons (car l) p2))))))
-
-(define (quicksort l)
- (let ((piv (pivot l)))
-   (if (equal? piv 'done) l
-     (let ((parts (partition piv l () ())))
-       (append (quicksort (car parts)) 
-               (quicksort (cadr parts)))))))
-
-
-(define pivot (lambda (l)
-  ( if (null? l) 'done 
-      (if (null? (cdr l)) 'done
-        if )
-
-  )
-))
-
-
-
-
-
-
-
-
-
-
-
-
-
-(begin (define partition (lambda (compare l1) (if (eqv? l1 '()) '() (if (compare (car l1)) (cons (car l1) (partition compare (cdr l1))) (partition compare (cdr l1)))))) (define quicksort (lambda (l1) (if (eqv? l1 '()) '() (let ((pivot (car l1))) (append (append (quicksort (partition (lambda (x) (< x pivot)) l1)) (partition (lambda (x) (= x pivot)) l1)) (quicksort (partition (lambda (x) (> x pivot)) l1))))))) (quicksort '(9 8 7 6 5 4 3 2 1)))
-
-
-
-(begin 
-  (define partition (lambda (compare l1) 
-      (if (eqv? l1 '()) 
-          '() 
-        (if (compare (car l1)) 
-            (cons (car l1) (partition compare (cdr l1))) 
-        (partition compare (cdr l1))
-        )
-      )
-    )
-  )
-
-
-  (define quicksort (lambda (l1) 
-      (if (eqv? l1 '()) 
-          '() 
-        (let ((pivot (car l1))) 
-          (append 
-          (append 
-            (quicksort (partition (lambda (x) (< x pivot)) l1)) 
-            (partition (lambda (x) (= x pivot)) l1)) 
-          (quicksort (partition (lambda (x) (> x pivot)) l1)))
-        )
-
-      )
-    )
-  ) 
-
-  (quicksort '(9 8 7 6 5 4 3 2 1)))
-
-
-"(begin (define partition (lambda (compare l1) (if (eqv? l1 '()) '() (if (compare (car l1)) (cons (car l1) (partition compare (cdr l1))) (partition compare (cdr l1)))))) (partition (lambda (x) (< x 5)) '(3 7 6 1 4 12 2 0)))" 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
