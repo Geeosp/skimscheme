@@ -54,54 +54,9 @@
 -- 9th caso: quicksort
 "(begin (define partition (lambda (compare l1) (if (null? l1) '() (if (compare (car l1)) (cons (car l1) (partition compare (cdr l1))) (partition compare (cdr l1)))))) (define quicksort (lambda (l1) (if (null? l1) '() (let ((pivot (car l1))) (append (append (quicksort (partition (lambda (x) (< x pivot)) l1)) (partition (lambda (x) (= x pivot)) l1)) (quicksort (partition (lambda (x) (> x pivot)) l1))))))) (quicksort '(7 12 2 4 25 14 36 0 18 1 12)))"
  
--- 10th caso: closure
-"(begin (define f (make-closure (lambda (a) (begin (define g (make-closure (lambda (b) (+ a b)))))))) (define x (f 1)) (x 3))"
+-- 10th caso: closure da wikipedia (http://en.wikipedia.org/wiki/Closure_(computer_programming))
+"(begin (define f (make-closure (lambda (a) (begin (define g (make-closure (lambda (b) (+ a b)))))))) (define clo1 (f 1)) (define clo2 (f 5)) (+ (clo1 3) (clo2 3)))"
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(begin 
-    (define f
-      (make-closure
-        (lambda (a) (begin 
-                      (define g 
-                        (make-closure 
-                          (lambda (b) (+ a b))
-                        )
-                      )
-                    )
-      )
-    )
-  )
-(define x (f 1)))
-
-
-                      
-
-(begin (define f (make-closure (lambda (a) (begin (define g (make-closure (lambda (b) (+ a b)))))))) (define x (f 1)) (x 3))
-
-
-
-
-
-
+-- 11th caso: closure do wikipedia 2 (http://en.wikipedia.org/wiki/Closure_(computer_programming)#Other_uses)
+"(begin (let ((secret-message \"none\")) (begin (define foo (make-closure (lambda (msg) (set! secret-message msg)))) (define bar (make-closure (lambda () secret-message))))) (define str1 (bar)) (foo \"meet me by the docks at midnight\") (cons str1 (bar)))"
 

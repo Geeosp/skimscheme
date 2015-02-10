@@ -221,6 +221,7 @@ apply env func args =
                                         (result, newState) = f $ union closureEnv s
                                         (ST f2) = eval newState (List (Atom "define" : Atom func : (List (Atom "make-closure" : lam : [])) : []))
                                         (result2, newClosureState) = f2 $ union newState $ union env s
+                                        -- juntar o que tem de novo no enviroment da closure com o que ja tinha
                                         finalState = union (difference newClosureState (difference localEnv env)) env
                                     in (result, finalState)
                                 )
