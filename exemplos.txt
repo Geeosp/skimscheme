@@ -54,22 +54,50 @@
 -- 9th caso: quicksort
 "(begin (define partition (lambda (compare l1) (if (null? l1) '() (if (compare (car l1)) (cons (car l1) (partition compare (cdr l1))) (partition compare (cdr l1)))))) (define quicksort (lambda (l1) (if (null? l1) '() (let ((pivot (car l1))) (append (append (quicksort (partition (lambda (x) (< x pivot)) l1)) (partition (lambda (x) (= x pivot)) l1)) (quicksort (partition (lambda (x) (> x pivot)) l1))))))) (quicksort '(7 12 2 4 25 14 36 0 18 1 12)))"
  
--- 10th caso: 
-
-
-
-
--- sem o closure (dando not a number)
-"(begin (let ((m 3) (n 9)) (define f (lambda (z) (begin (+ (* z n) m))))) (define h (f 2)))"
-
--- sem o closure (professor!)
-"(begin (let ((i 0)) (define f (lambda (y) (begin (set! i (+ i y)) i)))) (define val1 (f 1)) (define val2 (f 1)) (+ val1 val2))"
+-- 10th caso: closure
+"(begin (define f (make-closure (lambda (a) (begin (define g (make-closure (lambda (b) (+ a b)))))))) (define x (f 1)) (x 3))"
 
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(begin 
+    (define f
+      (make-closure
+        (lambda (a) (begin 
+                      (define g 
+                        (make-closure 
+                          (lambda (b) (+ a b))
+                        )
+                      )
+                    )
+      )
+    )
+  )
+(define x (f 1)))
+
+
+                      
+
+(begin (define f (make-closure (lambda (a) (begin (define g (make-closure (lambda (b) (+ a b)))))))) (define x (f 1)) (x 3))
 
 
 
