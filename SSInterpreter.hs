@@ -63,11 +63,12 @@ eval env (List (Atom "begin": l: ls)) = ST $
   (\s ->
     let (ST f) = eval env l
         (result, newState) = f s
-    in case (trace ("\nresult: "++(show (result))) result) of
+    in case result of
+    --in case (trace ("\nresult: "++(show (result))) result) of
       (error@(Error _)) -> (error, newState)
       otherwise         -> let envir = (union newState env)
-                               (ST f2) = eval (trace ("\nenvir"++(show (envir))) envir) (List (Atom "begin" : ls))
-                              -- (ST f2) = eval newState (List (Atom "begin" : ls))
+                               --(ST f2) = eval (trace ("\nenvir"++(show (envir))) envir) (List (Atom "begin" : ls))
+                               (ST f2) = eval newState (List (Atom "begin" : ls))
                                (result2, newState2) = f2 envir
                             in (result2, (union newState2 newState))
   )
@@ -188,7 +189,7 @@ apply env func args =
                                     in (result, finalState)
                                 )
                             List (Atom "lambda" : List formals : body:l) -> lambda env formals body args                              
-                            otherwise -> return (Error "not a function.")
+                            otherwise -> return (Error ((show res) ++"   not a function."))
                         )
  
 -- The lambda function is an auxiliary function responsible for
@@ -211,6 +212,9 @@ environment =
             insert "number?"        (Native predNumber)
           $ insert "boolean?"       (Native predBoolean)
           $ insert "list?"          (Native predList)
+
+          $ insert "null?"          (Native predNull)
+
           $ insert "+"              (Native numericSum) 
           $ insert "eqv?"           (Native eqv)
           $ insert "-"              (Native numericSub)  
@@ -219,7 +223,6 @@ environment =
           $ insert "lt?"            (Native lt)
           $ insert "mod"            (Native modulo)
           $ insert "/"              (Native divisao)
-         {-
           $ insert "<"              (Native lt)
           $ insert ">"              (Native gt)
           $ insert "<="             (Native lte)
@@ -229,8 +232,7 @@ environment =
           $ insert "cons"           (Native cons)
           $ insert "car"            (Native car)           
           $ insert "cdr"            (Native cdr) 
-          
-          -}   
+           
   
             empty
 
@@ -298,7 +300,7 @@ numericSub [] = Error "wrong number of arguments."
 -- The following case handles negative number literals.
 numericSub [x] = if onlyNumbers [x]
                  then (\num -> (Number (- num))) (unpackNum x)
-                 else Error "not a number."
+                 else Error "not a number (sub)."
 numericSub l = numericBinOp (-) l
 
 -- We have not implemented division. Also, notice that we have not 
@@ -307,7 +309,7 @@ numericSub l = numericBinOp (-) l
 numericBinOp :: (Integer -> Integer -> Integer) -> [LispVal] -> LispVal
 numericBinOp op args = if onlyNumbers args 
                        then Number $ foldl1 op $ Prelude.map unpackNum args 
-                       else Error "not a number."
+                       else Error "not a number (numericBinOp)."
                        
 
 
@@ -392,7 +394,6 @@ evalBool op l1 l2 = op l1 l2
 
 
 divisao :: [LispVal] -> LispVal
-
 divisao ((Number a):(Number b):[]) = Number (a `div` b)
 divisao l = if (zerofree (tail l)) then
               numericBinOp (div) l
@@ -409,6 +410,15 @@ zerofree ((Number a):as) = if a == 0 then
 modulo :: [LispVal] -> LispVal
 modulo ((Number a):(Number b):[]) = Number (a `mod` b)
 modulo _ = Error ("Wrong number or type of arguments")
+
+
+predNull :: [LispVal] -> LispVal
+predNull ([List []]) = Bool True
+predNull (List _ : []) = Bool False
+predNull (a:[]) = (trace (show a) (Bool False))
+predNull ls = Error "wrong number of arguments."
+
+
 
 funcaoIf :: StateT -> [LispVal] -> StateTransformer LispVal
 funcaoIf env (((Bool cond)):conseq:alt:[]) 

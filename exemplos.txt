@@ -66,6 +66,8 @@
 --dando not a number
 "(begin (let ((m 3) (n 9)) (define f (lambda (z) (begin (+ (* z n) m))))) (define h (f 2)))"
 
+-- exemplo acima com closure
+"(begin (let ((m 3) (n 9)) (define f (make-closure (lambda (z) (begin (/ (* z n) m)))))) (define h (f 2)))"
 
 -- sem o closure (professor!)
 "(begin (let ((i 0)) (define f (lambda (y) (begin (set! i (+ i y)) i)))) (define val1 (f 1)) (define val2 (f 1)) (+ val1 val2))"
@@ -74,10 +76,14 @@
 
 
 
+-- multiplicacao
+"(begin (define mult (lambda (a b) (if (eqv? b 0) 0 (+ a (mult a (- b 1)))))) (mult 4 10))"
 
+-- fatorial (10! = 3628800)
+"(begin (define fat (lambda (a) (if (eqv? a 0) 1 (* a (fat (- a 1)))))) (fat 10))"
 
-
-
+-- fatorial usando a multiplicao com recursão
+"(begin (define mult (lambda (a b) (if (eqv? b 0) 0 (+ a (mult a (- b 1)))))) (define fat (lambda (a) (if (eqv? a 0) 1 (* a (fat (- a 1)))))) (fat 10))"
 
 
 
