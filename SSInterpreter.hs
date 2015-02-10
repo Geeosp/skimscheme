@@ -138,7 +138,7 @@ eval env form = return (Error ("Could not eval the special form: " ++ (show form
 stateLookup :: StateT -> String -> StateTransformer LispVal
 stateLookup env var = ST $ 
   (\s -> 
-    (maybe (Error "variable does not exist.") 
+    (maybe (Error "variable does not exist. - stateLookup") 
            id (Map.lookup var (union env s)
            --id (Map.lookup (trace ("******     trace...    *********"++(show (union env s))) var) (union env s) -- TIVEMOS QUE TROCAR A ORDEM AQUI DOS PARAMETROS
     ), (union env s)))
@@ -395,6 +395,7 @@ evalBool op l1 l2 = op l1 l2
 
 divisao :: [LispVal] -> LispVal
 divisao ((Number a):(Number b):[]) = Number (a `div` b)
+divisao ((Error _):l) = Error ("Wrong number or type of arguments")
 divisao l = if (zerofree (tail l)) then
               numericBinOp (div) l
             else
@@ -485,6 +486,18 @@ unpackBool :: [LispVal] -> Bool
 unpackBool ((Bool b):[]) = b
 
 
+
+
+append :: [LispVal] -> LispVal
+append [] = List []
+append [List l] = List l
+append ((List l):ls) = List (l ++ k) where (List k) = append ls
+append _ = Error $ "Wrong number of arguments"
+--append :: [LispVal] -> LispVal
+--append [] = (trace (show "\nappend\n") (List []))
+--append [List l] = (trace (show "\nappend\n") (List l))
+--append ((List l):ls) = List (l ++ k) where (List k) = append (trace (show "\nappend\n") ls)
+--append _ = Error $ "Wrong number of arguments"
 
 
 -----------------------------------------------------------
