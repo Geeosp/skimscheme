@@ -85,14 +85,50 @@ eval env closure@(List(Atom "make-closure" : lam@(List (Atom "lambda" : (List fo
  --return (List (lam : (Environment (trace (show (env)) env)) : []))
  return (List (lam : (Environment env) : []))
 
--- if function
-eval env (List (Atom "if" : cond : conseq : alt : [])) =
-        eval env cond >>= (\t -> funcaoIf env (t : conseq : alt : []))
-
-eval env (List (Atom "if" : cond : conseq : []))=
-        eval env cond >>= (\t-> funcaoIfSemElse env (t : conseq : []))
 
 
+
+--funcaoIf :: StateT -> [LispVal] -> StateTransformer LispVal
+--funcaoIf env (((Bool cond)):conseq:alt:[]) 
+--  | cond   = eval env conseq
+--  | otherwise = eval env alt
+--funcaoIf env l = return $ Error "Wrong number of arguments (funcaoIf)"
+
+---- if function
+--eval env (List (Atom "if" : cond : conseq : alt : [])) =
+--        eval env cond >>= (\t -> funcaoIf env (t : conseq : alt : []))
+
+
+
+eval env (List (Atom "if" : cond : conseq : alt : [])) = ST $
+  (\s -> let (ST f) = eval env cond
+             (result, newState) = f (union env s)
+         in 
+            case result of
+            (Bool condicao) -> if (condicao) then
+                                    let (ST f1) = eval (union newState env) conseq
+                                        (result1, newState1) = f1 (union newState env)
+                                    in (result1, (union newState1 newState))
+                                else
+                                    let (ST f2) = eval (union newState env) alt
+                                        (result2, newState2) = f2 (union newState env)
+                                    in (result2, (union newState2 newState))
+            otherwise       -> (Error ("Wrong type of arguments"), newState)
+    )
+
+
+eval env (List (Atom "if" : cond : conseq : [])) = ST $
+  (\s -> let (ST f) = eval env cond
+             (result, newState) = f (union env s)
+         in case result of
+            (Bool condicao) -> if (condicao) then
+                                    let (ST f1) = eval (union newState env) conseq
+                                        (result1, newState1) = f1 (union newState env)
+                                    in (result1, (union newState1 newState))
+                                else
+                                    ((Error ("unspecified")), newState)
+            otherwise       -> (Error ("Wrong type of arguments"), newState)
+  )
 ------ let function
 --eval env (List (Atom "let" : List attributions : exp : []))
 --    = lambda env params exp values
@@ -138,7 +174,7 @@ eval env form = return (Error ("Could not eval the special form: " ++ (show form
 stateLookup :: StateT -> String -> StateTransformer LispVal
 stateLookup env var = ST $ 
   (\s -> 
-    (maybe (Error "variable does not exist. - stateLookup") 
+    (maybe (Error ((show var)++" -> variable does not exist. - stateLookup"))
            id (Map.lookup var (union env s)
            --id (Map.lookup (trace ("******     trace...    *********"++(show (union env s))) var) (union env s) -- TIVEMOS QUE TROCAR A ORDEM AQUI DOS PARAMETROS
     ), (union env s)))
@@ -215,20 +251,28 @@ environment =
 
           $ insert "null?"          (Native predNull)
 
+          $ insert "append"         (Native append)
+ 
+           
           $ insert "+"              (Native numericSum) 
-          $ insert "eqv?"           (Native eqv)
           $ insert "-"              (Native numericSub)  
           $ insert "/"              (Native divisao)       
           $ insert "*"              (Native numericMult)
           $ insert "lt?"            (Native lt)
           $ insert "mod"            (Native modulo)
-          $ insert "/"              (Native divisao)
+          
+
+          $ insert "eqv?"           (Native eqv)
           $ insert "<"              (Native lt)
           $ insert ">"              (Native gt)
+
+          
+
           $ insert "<="             (Native lte)
           $ insert ">="             (Native gte)
           $ insert "="              (Native eq)
-          
+        
+        
           $ insert "cons"           (Native cons)
           $ insert "car"            (Native car)           
           $ insert "cdr"            (Native cdr) 
@@ -488,11 +532,23 @@ unpackBool ((Bool b):[]) = b
 
 
 
+--append :: [LispVal] -> LispVal
+--append [] = List []
+--append [List l] = List l
+--append ((List l):(List k):d) = List (l ++ k) 
+--          where (List k) = append (k++d)
+--append _ = Error $ "Wrong number of arguments"
+
 append :: [LispVal] -> LispVal
 append [] = List []
 append [List l] = List l
-append ((List l):ls) = List (l ++ k) where (List k) = append ls
+append ((List l):ls) = let ka = append ls
+                       in case ka of
+                       (List k) -> List (l ++ k)
+                       otherwise -> (trace ("****ka: "++(show ka)++"\n****ls: "++(show ls)) Error (""))
 append _ = Error $ "Wrong number of arguments"
+
+
 --append :: [LispVal] -> LispVal
 --append [] = (trace (show "\nappend\n") (List []))
 --append [List l] = (trace (show "\nappend\n") (List l))
